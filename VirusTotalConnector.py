@@ -11,7 +11,7 @@ RELEVANT_STATUSES = ["harmless", "suspicious", "malicious"]
 # todo - handle exceptions, input validations and general validations (such as "if response.ok") in the different
 #  functions
 
-def _retrieve_unprocessed_file_path(source_folder_path):
+def retrieve_unprocessed_file_path(source_folder_path):
     file_name_to_process = ""
     for file_name in os.listdir(source_folder_path):
         if not file_name.endswith(".done"):
@@ -27,7 +27,7 @@ def _retrieve_unprocessed_file_path(source_folder_path):
     return source_folder_path + "\\" + file_name_to_process
 
 
-def _get_entities_from_file(unprocessed_file_path, iteration_entities_count):
+def get_entities_from_file(unprocessed_file_path, iteration_entities_count):
     entities = []
     with open(unprocessed_file_path, 'r') as file:
         while iteration_entities_count > 0:
@@ -109,14 +109,18 @@ def _mark_file_as_done(unprocessed_file_path):
 
 
 def main():
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s - %(levelname)s - %(message)s',
+                        datefmt='%H:%M:%S')
+
     io_mgr = SubProcessInputOutputHandler()
     connector_params = io_mgr.connector_params
     connector_result = ConnectorResult()
 
     logging.info(f"Looking for file to process in {connector_params.source_folder_path}")
-    unprocessed_file_path = _retrieve_unprocessed_file_path(connector_params.source_folder_path)
+    unprocessed_file_path = retrieve_unprocessed_file_path(connector_params.source_folder_path)
     logging.info(f"Starting to process {unprocessed_file_path}")
-    entities = _get_entities_from_file(unprocessed_file_path, connector_params.iteration_entities_count)
+    entities = get_entities_from_file(unprocessed_file_path, connector_params.iteration_entities_count)
     logging.info(
         f"Max entities to retrieve is {connector_params.iteration_entities_count}. "
         f"Retrieved {len(entities)} entities from {unprocessed_file_path}")
@@ -128,7 +132,4 @@ def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO,
-                        format='[%(asctime)s] %(message)s',
-                        datefmt='%H:%M:%S')
     main()

@@ -1,3 +1,5 @@
+import logging
+
 from DataModels import ConnectorParams
 import json
 import sys
@@ -9,7 +11,7 @@ class SubProcessInputOutputHandler(object):
         result = ConnectorParams()
 
         # get input from STDIN
-        arg = input()
+        arg = sys.stdin.readline()
         # parse the JSON from the first argument
         params = json.loads(arg)
         result.source_folder_path = params.get("source_folder_path")

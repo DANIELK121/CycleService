@@ -14,9 +14,3 @@ class ConnectorParams(object):
 
 class ConnectorResult(object):
     alerts = None  # Dictionary {string, any} - connector output with data per entity. Key = Entity, value = entity data
-
-
-class ProcessInfo(object):
-    proc = None  # Finished process
-    out = None  # Bytes wrote to process stdout
-    err = None  # Bytes wrote to process stderr

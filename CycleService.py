@@ -1,14 +1,13 @@
+import glob
 import json
+import os
 import subprocess
 import sys
 import logging
-import threading
-import time
-
 import DataModels
 from datetime import datetime
 
-lock = threading.Lock()
+DATE_FORMAT = "D%Y-%m-%dT%H-%M-%S"
 
 
 # todo - handle exceptions, input validations and general validations (such as "if response.ok") in the different
@@ -24,72 +23,78 @@ def create_connector_settings_object(connector_settings_json):
     return connector_settings
 
 
-def run_connector(connector_settings, finished_missions_queue):
-    process_info = DataModels.ProcessInfo()
-    proc = subprocess.Popen([sys.executable, connector_settings.script_file_path], stdin=subprocess.PIPE,
-                            stdout=subprocess.PIPE)
-    serialized = json.dumps(connector_settings.params)
-    # send the serialized data to proc's STDIN
-    process_info.out, process_info.err = proc.communicate(serialized.encode())
-    process_info.proc = proc
-
-    # timestamp of retrieved data
-    timestamp = datetime.now().strftime("D%Y-%m-%dT%H-%M-%S")
-    with lock:
-        finished_missions_queue.append(
-            [process_info, connector_settings, timestamp])  # adding finished mission details to queue
-    threading.Timer(connector_settings.run_interval_seconds, run_connector, args=(connector_settings,
-                                                                                  finished_missions_queue)).start()
+def get_last_sync_time(output_folder_path):
+    list_of_files = glob.glob(f"{output_folder_path}\\*")  # * means all if need specific format then *.csv
+    latest_file = max(list_of_files, key=os.path.getctime)
+    last_file_timestamp = latest_file.split('.')[0].split('-', 1)[1]
+    return datetime.strptime(last_file_timestamp, DATE_FORMAT)
 
 
-def handle_results(finished_missions_queue):
-    while len(finished_missions_queue) > 0:
-        with lock:
-            mission_details = finished_missions_queue.pop()
-
-        process_info = mission_details[0]
-        connector_settings = mission_details[1]
-        timestamp = mission_details[2]
-
-        out = process_info.out
-        if process_info.proc.returncode == 0:
-            # save results to a file named with connector's name and timestamp
-            path_to_write = f'{connector_settings.output_folder_path}\\{connector_settings.connector_name}-{timestamp}.json'
-            with open(path_to_write, 'w') as file:
-                json.dump(json.loads(out), file, indent=4)
-
-            logging.info(f"Connector {connector_settings.connector_name} completed successfully. "
-                         f"Results were wrote to {path_to_write}")  # todo change msg to be more informative - add connector name and where it wrote to
-        else:
-            # something went wrong - no results. todo - writing error to file
-            logging.warning(
-                f"Connector {connector_settings.connector_name} failed to sync results. "  # todo change msg to be more informative - add connector name
-                f"Reason: {out.decode()}")
+def is_empty(output_folder_path):
+    if not os.listdir(output_folder_path):
+        return True
+    else:
+        return False
 
 
 def main():
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s - %(levelname)s - %(message)s',
+                        datefmt='%H:%M:%S')
+
     # loading connectors' settings
     connectors_settings = open("config\\ConnectorsSettingsConfig.json", "r")
     arr = json.load(connectors_settings)
-    finished_missions_queue = []
+    working_connectors_queue = []
 
     # extracting configurations into DataModels.ConnectorSettings objects
-    connector_settings_arr = [create_connector_settings_object(connector_settings_json) for connector_settings_json in arr]
-
-    # initializing connectors' and files writer work
-    for connector_settings in connector_settings_arr:
-        threading.Thread(target=run_connector, args=(connector_settings, finished_missions_queue)).start()
+    connector_settings_arr = [create_connector_settings_object(connector_settings_json) for connector_settings_json in
+                              arr]
 
     # handling finished missions
     while True:
-        # todo - will run every 30 seconds for now. in future may run every: the minimum between the sleep time of the
-        #  connectors + 1
-        time.sleep(10)
-        handle_results(finished_missions_queue)
+        for connector_settings in connector_settings_arr:
+            # if dir is empty or last file in it time stamp is larger than now
+            output_folder_path = connector_settings.output_folder_path
+            if is_empty(output_folder_path) or (datetime.now() - get_last_sync_time(
+                    output_folder_path)).total_seconds() >= connector_settings.run_interval_seconds:
+                logging.info(f"start running {connector_settings.connector_name}")
+                proc = subprocess.Popen([sys.executable, connector_settings.script_file_path], stdin=subprocess.PIPE,
+                                        stdout=subprocess.PIPE, encoding='utf8')
+                # writing params as a line to STDIN so the connector can read it as a line
+                proc.stdin.write(f"{json.dumps(connector_settings.params)}\n")
+                proc.stdin.flush()
+
+                working_connectors_queue.append([connector_settings, proc])
+
+        while len(working_connectors_queue) > 0:
+
+            for working_connector in working_connectors_queue:
+                connector_settings, proc = working_connector[0], working_connector[1]
+
+                return_code = proc.poll()
+                if return_code is not None:
+                    logging.info(f"return code for {connector_settings.connector_name} is {return_code}")
+                    # timestamp of retrieved data
+                    timestamp = datetime.now().strftime(DATE_FORMAT)
+
+                    out, err = proc.communicate()
+                    if return_code == 0:
+                        # save results to a file named with connector's name and timestamp
+                        path_to_write = f'{connector_settings.output_folder_path}\\{connector_settings.connector_name}-{timestamp}.json'
+                        with open(path_to_write, 'w') as file:
+                            json.dump(json.loads(out), file, indent=4)
+
+                        logging.info(f"Connector {connector_settings.connector_name} completed successfully. "
+                                     f"Results were wrote to {path_to_write}")  # todo change msg to be more informative - add connector name and where it wrote to
+                    else:
+                        # something went wrong - no results. todo - writing error to file
+                        logging.warning(
+                            f"Connector {connector_settings.connector_name} failed to sync results. "  # todo change msg to be more informative - add connector name
+                            f"Reason: {out}")
+
+                    working_connectors_queue.remove(working_connector)
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO,
-                        format='[%(asctime)s] %(message)s',
-                        datefmt='%H:%M:%S')
     main()
