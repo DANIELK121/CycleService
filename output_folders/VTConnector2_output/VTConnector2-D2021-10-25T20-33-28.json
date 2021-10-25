@@ -1,0 +1,10 @@
+{
+    "msn.com": {
+        "status": "Not Suspicious"
+    },
+    "ynet.com": {
+        "status": "Not Suspicious"
+    },
+    "chao-yue.net": "Quota exceeded",
+    "facebook.com": "Quota exceeded"
+}

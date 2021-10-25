@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="JsonSchemaMappingsProjectConfiguration">
+    <state>
+      <map>
+        <entry key="Events Test Scheme">
+          <value>
+            <SchemaInfo>
+              <option name="name" value="Events Test Scheme" />
+              <option name="relativePathToSchema" value="../../../../Program Files/JetBrains/PyCharm Community Edition 2021.2.2/lib/platform-statistics-devkit.jar!/schemas/events-test-scheme.schema.json" />
+              <option name="applicationDefined" value="true" />
+              <option name="patterns">
+                <list>
+                  <Item>
+                    <option name="path" value="output_folders/VTConnector1_output/VTConnector1-D2021-10-25T18-00-18.json" />
+                  </Item>
+                </list>
+              </option>
+            </SchemaInfo>
+          </value>
+        </entry>
+        <entry key="JSON Schema version 4">
+          <value>
+            <SchemaInfo>
+              <option name="name" value="JSON Schema version 4" />
+              <option name="relativePathToSchema" value="http://json-schema.org/draft-04/schema" />
+              <option name="applicationDefined" value="true" />
+              <option name="patterns">
+                <list>
+                  <Item>
+                    <option name="path" value="output_folders/VTConnector2_output/VTConnector2-D2021-10-25T17-47-35.json" />
+                  </Item>
+                </list>
+              </option>
+            </SchemaInfo>
+          </value>
+        </entry>
+      </map>
+    </state>
+  </component>
+</project>
