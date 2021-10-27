@@ -66,7 +66,12 @@ if __name__ == "__main__":  # ensure the script is run directl
     # print("First name: {}".format(data["user"]["first_name"]))  # print to STDOUT
     # print("Last name: {}".format(data["user"]["last_name"]))  # print to STDOUT
 
-    entities = ["msn.com"]  # "ynet.com", "chao-yue.net", "facebook.com"
-    alerts = {}
-    _analyze_entities(entities, alerts)
-    print(alerts["msn.com"])
+    # entities = ["msn.com"]  # "ynet.com", "chao-yue.net", "facebook.com"
+    # alerts = {}
+    # _analyze_entities(entities, alerts)
+    # print(alerts["msn.com"])
+    arr = []
+    if arr:
+        print("filled")
+    else:
+        print("not")
