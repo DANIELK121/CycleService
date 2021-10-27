@@ -1,10 +1,10 @@
 import os
 import logging
 import requests as rq
-from Errors import ErrorType
+from commons.Errors import ErrorType, Error
 from datetime import datetime
 from SubProcessInputOutputHandler import SubProcessInputOutputHandler
-from DataModels import ConnectorResult
+from commons.DataModels import ConnectorResult
 
 VT_API_URL = 'https://www.virustotal.com/api/v3/domains/'
 RELEVANT_STATUSES = ["harmless", "suspicious", "malicious"]
@@ -28,15 +28,15 @@ def retrieve_unprocessed_file_path(source_folder_path,
                 break
 
         if file_name_to_process is None:
-            error = ErrorType.NO_FILES_TO_PROCESS.value + source_folder_path
+            error = Error(ErrorType.NO_FILES_TO_PROCESS, source_folder_path)
     else:
-        error = ErrorType.FILE_NOT_FOUND.value + source_folder_path
+        error = Error(ErrorType.FILE_NOT_FOUND, source_folder_path)
 
     if error is not None:
         logger.warning(error)
         raise Exception(error)
 
-    return source_folder_path + "\\" + file_name_to_process
+    return source_folder_path + "\\" + file_name_to_process # todo - check if there is more general way to do so - so it works on linux to
 
 
 def get_entities_from_file(unprocessed_file_path, iteration_entities_count, logger):
@@ -55,9 +55,9 @@ def get_entities_from_file(unprocessed_file_path, iteration_entities_count, logg
 
         if len(entities) == 0:
             mark_file_as_done(unprocessed_file_path)
-            error = ErrorType.EMPTY_FILE.value + unprocessed_file_path
+            error = Error(ErrorType.EMPTY_FILE, unprocessed_file_path)
     else:
-        error = ErrorType.FILE_NOT_FOUND.value + unprocessed_file_path
+        error = Error(ErrorType.FILE_NOT_FOUND, unprocessed_file_path)
 
     if error is not None:
         logger.warning(error)

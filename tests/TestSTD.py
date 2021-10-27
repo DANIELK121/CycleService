@@ -1,8 +1,4 @@
-import json
-from types import SimpleNamespace
-
 import requests as rq
-from Errors import ErrorType, Error
 
 RELEVANT_STATUSES = ["malicious", "suspicious", "harmless"]
 

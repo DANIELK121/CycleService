@@ -2,7 +2,7 @@
   {
     "run_interval_seconds" : 12,
     "script_file_path" : "VirusTotalConnector.py",
-    "connector_name" : "VTConnector1",
+    "connector_name" : "",
     "params" : {
       "source_folder_path" : "source_folders\\source_files_1",
       "iteration_entities_count" : 3,
