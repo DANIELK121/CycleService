@@ -35,21 +35,24 @@ class SubProcessInputOutputHandler(object):
             return_code = SUCCESS
         else:
             # connector_result is of type Exception
-            exception_arg = connector_result.args[0]
-
-            if isinstance(exception_arg, Error):
-                if exception_arg.error_type.name in UNRECOVERABLE_ERRORS:
-                    return_code = NO_RECOVER
-                else:
-                    return_code = ABORT
-                output = exception_arg.get_full_error_msg()
-            else:
-                output = str(connector_result)
-                return_code = ABORT
+            output, return_code = self.extract_exception(connector_result)
         # pass connector output as stdout
         sys.stdout.write(output)
         # end current process
         exit(return_code)
+
+    def extract_exception(self, e):
+        exception_arg = e.args[0]
+        if isinstance(exception_arg, Error):
+            if exception_arg.error_type.name in UNRECOVERABLE_ERRORS:
+                return_code = NO_RECOVER
+            else:
+                return_code = ABORT
+            output = exception_arg.get_full_error_msg()
+        else:
+            output = str(e)
+            return_code = ABORT
+        return output, return_code
 
     def get_param_or_exit(self, key, json_obj, expected_type):
         if key in json_obj.keys() and json_obj.get(key) and isinstance(

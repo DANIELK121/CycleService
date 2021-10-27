@@ -70,7 +70,7 @@ def get_date_from_utc(last_mod_date):
     return datetime.utcfromtimestamp(last_mod_date).strftime(DATE_FORMAT)
 
 
-def analyze_entities(entities, api_key, logger):  # todo - add try/except
+def analyze_entities(entities, api_key, logger):
     alerts = dict()
     success = 0
     fails = 0
