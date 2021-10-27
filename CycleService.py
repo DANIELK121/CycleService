@@ -112,6 +112,7 @@ def main():
                     return_code = proc.poll()
                     # checking if process finished
                     if return_code is not None:
+                        logger.info(f"{connector_settings.connector_name} finished with return code {return_code}")
                         # timestamp of data syncing
                         timestamp = datetime.now().strftime(DATE_FORMAT)
                         out, err = proc.communicate()
@@ -129,7 +130,7 @@ def main():
                         elif return_code == NO_RECOVER:
                             # unrecoverable condition. removing connector settings from execution list
                             connector_output = f"{connector_settings.connector_name} encountered an unrecoverable condition. " \
-                                           f"Reason: {out}" \
+                                           f"Reason: {out}. " \
                                            f"removing {connector_settings.connector_name} settings from execution list"
                             logger.warning(connector_output)
                             connector_settings_arr.remove(connector_settings)

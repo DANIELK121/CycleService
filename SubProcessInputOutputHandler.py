@@ -5,6 +5,8 @@ import sys
 from commons.Errors import Error, ErrorType
 from commons.Utils import get_param_or_default, SUCCESS, NO_RECOVER, ABORT
 
+UNRECOVERABLE_ERRORS = [ErrorType.MISSING_MANDATORY_PARAM.name, ErrorType.DIR_NOT_FOUND.name]
+
 
 class SubProcessInputOutputHandler(object):
 
@@ -25,7 +27,7 @@ class SubProcessInputOutputHandler(object):
 
             return result
         except Exception as e:
-            self.end(Error(ErrorType.LOCAL_ERROR, f"Error in SubProcessInputOutputHandler::connector_params: {e}"))
+            self.end(Exception(Error(ErrorType.LOCAL_ERROR, f"Error in SubProcessInputOutputHandler::connector_params: {e}")))
 
     def end(self, connector_result):
         if isinstance(connector_result, DataModels.ConnectorResult):
@@ -33,13 +35,14 @@ class SubProcessInputOutputHandler(object):
             return_code = SUCCESS
         else:
             # connector_result is of type Exception
-            arg = connector_result[0]
-            if isinstance(arg, Error):
-                if type(arg.error_type) in [ErrorType.MISSING_MANDATORY_PARAM, ErrorType.DIR_NOT_FOUND]:
+            exception_arg = connector_result.args[0]
+
+            if isinstance(exception_arg, Error):
+                if exception_arg.error_type.name in UNRECOVERABLE_ERRORS:
                     return_code = NO_RECOVER
                 else:
                     return_code = ABORT
-                output = arg.get_full_error_msg()
+                output = exception_arg.get_full_error_msg()
             else:
                 output = str(connector_result)
                 return_code = ABORT
@@ -53,4 +56,4 @@ class SubProcessInputOutputHandler(object):
                 json_obj.get(key), expected_type):
             return json_obj.get(key)
         else:
-            self.end(Error(ErrorType.MISSING_MANDATORY_PARAM, key))
+            self.end(Exception(Error(ErrorType.MISSING_MANDATORY_PARAM, key)))

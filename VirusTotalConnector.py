@@ -30,10 +30,10 @@ def retrieve_unprocessed_file_path(source_folder_path,
         if file_name_to_process is None:
             error = Error(ErrorType.NO_FILES_TO_PROCESS, source_folder_path)
     else:
-        error = Error(ErrorType.FILE_NOT_FOUND, source_folder_path)
+        error = Error(ErrorType.DIR_NOT_FOUND, source_folder_path)
 
     if error is not None:
-        logger.warning(error)
+        logger.warning(error.get_full_error_msg())
         raise Exception(error)
 
     return source_folder_path + "\\" + file_name_to_process # todo - check if there is more general way to do so - so it works on linux to
@@ -54,13 +54,13 @@ def get_entities_from_file(unprocessed_file_path, iteration_entities_count, logg
                 iteration_entities_count -= 1
 
         if len(entities) == 0:
-            mark_file_as_done(unprocessed_file_path)
+            mark_file_as_done(unprocessed_file_path, logger)
             error = Error(ErrorType.EMPTY_FILE, unprocessed_file_path)
     else:
         error = Error(ErrorType.FILE_NOT_FOUND, unprocessed_file_path)
 
     if error is not None:
-        logger.warning(error)
+        logger.warning(error.get_full_error_msg())
         raise Exception(error)
 
     return entities
