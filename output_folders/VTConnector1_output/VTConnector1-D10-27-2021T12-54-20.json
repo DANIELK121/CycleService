@@ -1,0 +1,16 @@
+{
+    "msn.com": {
+        "status": "Not Suspicious"
+    },
+    "ynet.com": {
+        "status": "Not Suspicious"
+    },
+    "chao-yue.net": {
+        "status": "Suspicious",
+        "reasons": "0 <= reputation <= 20 and domain flagged as malicious by one or more security vendors",
+        "reputation": 0,
+        "unweighted_total_votes": "0 community members voted this domain as harmless, 0 community members voted this domain as malicious",
+        "last_analysis_stats": "81 security vendors flagged this domain as harmless, 1 security vendors flagged this domain as malicious, 0 security vendors flagged this domain as suspicious",
+        "last_information_modification_date": "04-01-2021 19:40:21"
+    }
+}

@@ -1,10 +1,10 @@
-import sys
-from datetime import datetime
-from SubProcessInputOutputHandler import SubProcessInputOutputHandler
-from DataModels import ConnectorResult
 import os
 import logging
 import requests as rq
+from Errors import ErrorType
+from datetime import datetime
+from SubProcessInputOutputHandler import SubProcessInputOutputHandler
+from DataModels import ConnectorResult
 
 VT_API_URL = 'https://www.virustotal.com/api/v3/domains/'
 RELEVANT_STATUSES = ["harmless", "suspicious", "malicious"]
@@ -16,9 +16,10 @@ DONE_SUFF = ".done"
 # todo - handle exceptions, input validations and general validations (such as "if response.ok") in the different
 #  functions
 
-def retrieve_unprocessed_file_path(source_folder_path): # todo - exception from here should terminate connector's activity
+def retrieve_unprocessed_file_path(source_folder_path,
+                                   logger):  # todo - exception from here should terminate connector's activity
     file_name_to_process = None
-    warn_msg = None
+    error = None
 
     if os.path.isdir(source_folder_path):
         for file_name in os.listdir(source_folder_path):
@@ -27,20 +28,20 @@ def retrieve_unprocessed_file_path(source_folder_path): # todo - exception from 
                 break
 
         if file_name_to_process is None:
-            warn_msg = f"no more files to process in directory {source_folder_path}!"
+            error = ErrorType.NO_FILES_TO_PROCESS.value + source_folder_path
     else:
-        warn_msg = f"directory {source_folder_path} wasn't found!"
+        error = ErrorType.FILE_NOT_FOUND.value + source_folder_path
 
-    if warn_msg is not None:
-        logging.warning(warn_msg)
-        raise Exception(warn_msg)
+    if error is not None:
+        logger.warning(error)
+        raise Exception(error)
 
     return source_folder_path + "\\" + file_name_to_process
 
 
-def get_entities_from_file(unprocessed_file_path, iteration_entities_count):
+def get_entities_from_file(unprocessed_file_path, iteration_entities_count, logger):
     entities = []
-    warn_msg = None
+    error = None
 
     if os.path.isfile(unprocessed_file_path):
         with open(unprocessed_file_path, 'r') as file:
@@ -54,13 +55,13 @@ def get_entities_from_file(unprocessed_file_path, iteration_entities_count):
 
         if len(entities) == 0:
             mark_file_as_done(unprocessed_file_path)
-            warn_msg = f"No entities found in file {unprocessed_file_path}!"
+            error = ErrorType.EMPTY_FILE.value + unprocessed_file_path
     else:
-        warn_msg = f"file {unprocessed_file_path} wasn't found!"
+        error = ErrorType.FILE_NOT_FOUND.value + unprocessed_file_path
 
-    if warn_msg is not None:
-        logging.warning(warn_msg)
-        raise Exception(warn_msg)
+    if error is not None:
+        logger.warning(error)
+        raise Exception(error)
 
     return entities
 
@@ -69,14 +70,18 @@ def get_date_from_utc(last_mod_date):
     return datetime.utcfromtimestamp(last_mod_date).strftime(DATE_FORMAT)
 
 
-def analyze_entities(entities, api_key):  # todo - add try/except
+def analyze_entities(entities, api_key, logger):  # todo - add try/except
     alerts = dict()
+    success = 0
+    fails = 0
     for domain in entities:
         try:
+            logger.debug(f"requesting information for domain {domain}")
             response = rq.get(f"{VT_API_URL}{domain}", headers={"x-apikey": api_key})
             vt_response_json = response.json()
 
             if response.ok:
+                logger.debug(f"retrieved data successfully for domain {domain}")
                 attr = vt_response_json.get("data").get("attributes")
                 rep = attr.get("reputation")
 
@@ -98,6 +103,7 @@ def analyze_entities(entities, api_key):  # todo - add try/except
                             alerts[domain] = {
                                 "status": "Not Suspicious"
                             }
+                            success += 1
                             continue
 
                     else:
@@ -118,44 +124,51 @@ def analyze_entities(entities, api_key):  # todo - add try/except
                     alerts[domain] = {
                         "status": "Not Suspicious"
                     }
+                success += 1
             else:
+                logger.debug(f"failed to retrieve data for domain {domain}")
                 alerts[domain] = vt_response_json.get("error").get("message")
+                fails += 1
         except Exception as e:
+            logger.debug(f"failed to retrieve data for domain {domain}")
             alerts[domain] = str(e)
+            fails += 1
+    logger.info(f"successfully retrieved: {success} domains. "
+                f"failed to retrieve: {fails} domains")
     return alerts
 
 
-def mark_file_as_done(unprocessed_file_path):
-    suffix = '.done'
-    new_name = unprocessed_file_path + suffix
+def mark_file_as_done(unprocessed_file_path, logger):
+    new_name = unprocessed_file_path + DONE_SUFF
     os.rename(unprocessed_file_path, new_name)
+    logger.debug(f"marked {unprocessed_file_path} as done")
 
 
 def main():
     logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - %(levelname)s - %(message)s',
+                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                         datefmt='%H:%M:%S')
 
-    try:
-        io_mgr = SubProcessInputOutputHandler()
-        connector_params = io_mgr.connector_params
-        connector_result = ConnectorResult()
+    io_mgr = SubProcessInputOutputHandler()
+    connector_params = io_mgr.connector_params
+    connector_result = ConnectorResult()
 
-        logging.info(f"Looking for file to process in {connector_params.source_folder_path}")
-        unprocessed_file_path = retrieve_unprocessed_file_path(connector_params.source_folder_path)
-        logging.info(f"Starting to process file named {unprocessed_file_path}")
-        entities = get_entities_from_file(unprocessed_file_path, connector_params.iteration_entities_count)
-        logging.info(
+    logger = logging.getLogger(connector_params.connector_name)
+    try:
+        logger.info(f"Looking for file to process in {connector_params.source_folder_path}")
+        unprocessed_file_path = retrieve_unprocessed_file_path(connector_params.source_folder_path, logger)
+        logger.info(f"Starting to process file named {unprocessed_file_path}")
+        entities = get_entities_from_file(unprocessed_file_path, connector_params.iteration_entities_count, logger)
+        logger.info(
             f"Max entities to retrieve is {connector_params.iteration_entities_count}. "
             f"Retrieved {len(entities)} entities from file {unprocessed_file_path}")
 
-        connector_result.alerts = analyze_entities(entities, connector_params.api_key)
-        # _mark_file_as_done(unprocessed_file_path)  # todo - keep uncommented
+        connector_result.alerts = analyze_entities(entities, connector_params.api_key, logger)
+        # mark_file_as_done(unprocessed_file_path, logger)  # todo - keep uncommented
 
         io_mgr.end(connector_result)
     except Exception as e:
-        sys.stdout.write(str(e))
-        exit(1)
+        io_mgr.end(e)
 
 
 if __name__ == "__main__":

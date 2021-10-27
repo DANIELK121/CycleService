@@ -10,6 +10,7 @@ class ConnectorParams(object):
     source_folder_path = None  # string - file path for entity list files
     iteration_entities_count = None  # int - how many entities to process each interval (ignore the rest)
     api_key = None  # string - virus total api key
+    connector_name = None  # string - connector name, for logging
 
 
 class ConnectorResult(object):

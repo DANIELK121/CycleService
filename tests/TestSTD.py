@@ -2,6 +2,7 @@ import json
 from types import SimpleNamespace
 
 import requests as rq
+from Errors import ErrorType, Error
 
 RELEVANT_STATUSES = ["malicious", "suspicious", "harmless"]
 
@@ -70,8 +71,10 @@ if __name__ == "__main__":  # ensure the script is run directl
     # alerts = {}
     # _analyze_entities(entities, alerts)
     # print(alerts["msn.com"])
-    arr = []
-    if arr:
-        print("filled")
-    else:
-        print("not")
+
+    # arr = []
+    # if arr:
+    #     print("filled")
+    # else:
+    #     print("not")
+    pass

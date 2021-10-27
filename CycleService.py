@@ -16,11 +16,14 @@ DATE_FORMAT = "D%m-%d-%YT%H-%M-%S"
 # todo - add input validation as Dvir said. give default values for some, if value is not there
 def create_connector_settings_object(connector_settings_json):
     connector_settings = DataModels.ConnectorSettings()
+
     connector_settings.connector_name = connector_settings_json.get("connector_name")
-    connector_settings.params = connector_settings_json.get("params")
     connector_settings.run_interval_seconds = connector_settings_json.get("run_interval_seconds")
     connector_settings.script_file_path = connector_settings_json.get("script_file_path")
     connector_settings.output_folder_path = connector_settings_json.get("output_folder_path")
+    connector_settings.params = connector_settings_json.get("params")
+    connector_settings.params["connector_name"] = connector_settings.connector_name
+
     return connector_settings
 
 
@@ -52,9 +55,10 @@ def create_write_json_file(path_to_write, data):
 
 def main():
     logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - %(levelname)s - %(message)s',  # - %(name)s -
+                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # - %(name)s -
                         datefmt='%H:%M:%S')
 
+    logger = logging.getLogger("CycleService")
     # loading connectors' settings
     connectors_settings = open("config\\ConnectorsSettingsConfig.json", "r")
     connectors_settings_json_arr = json.load(connectors_settings)
@@ -76,7 +80,7 @@ def main():
                 # connector's run_interval_seconds has passed since last sync - activate connector
                 if is_empty(output_folder_path) or (datetime.now() - get_last_sync_time(
                         output_folder_path)).total_seconds() >= connector_settings.run_interval_seconds:
-                    logging.info(f"activating {connector_settings.connector_name}")
+                    logger.info(f"activating {connector_settings.connector_name}")
                     proc = subprocess.Popen([sys.executable, connector_settings.script_file_path],
                                             stdin=subprocess.PIPE,
                                             stdout=subprocess.PIPE, encoding='utf8')
@@ -85,22 +89,19 @@ def main():
                     proc.stdin.flush()
                     # adding working process to queue
                     working_connectors_queue.append([connector_settings, proc])
-            except Exception as e:   # todo - handle correctly
-                if e is isinstance(dir_not_found_error):
-                    logging.info(f"issue with {connector_settings.connector_name}'s source directory: {e}\n"
-                                 f"connector won't be activated again until it's configuration is changed")
-                    connector_settings_arr.remove(connector_settings)
-                pass
+            except Exception as e:
+                logger.warning(
+                    f"Exception occurred when checking connector settings of {connector_settings.connector_name}\n"
+                    f"exception msg: {str(e)}")
 
         while len(working_connectors_queue) > 0:
             for working_connector in list(working_connectors_queue):
+                connector_settings, proc = working_connector[0], working_connector[1]
                 try:
-                    connector_settings, proc = working_connector[0], working_connector[1]
-
                     return_code = proc.poll()
                     # checking if process finished
                     if return_code is not None:
-                        logging.info(f"{connector_settings.connector_name} finished with return code {return_code}")
+                        logger.info(f"{connector_settings.connector_name} finished with return code {return_code}")
 
                         # timestamp of syncing data
                         timestamp = datetime.now().strftime(DATE_FORMAT)
@@ -109,18 +110,20 @@ def main():
                         path_to_write = f'{connector_settings.output_folder_path}\\{connector_settings.connector_name}-{timestamp}.json'
                         if return_code == 0:
                             create_write_json_file(path_to_write, json.loads(out))
-                            logging.info(f"Connector {connector_settings.connector_name} completed successfully. "
+                            logger.info(f"Connector {connector_settings.connector_name} completed successfully. "
                                          f"Results were wrote to {path_to_write}")
                         else:
                             # something went wrong - no results. writing error msg to file
                             err_msg = f"Connector {connector_settings.connector_name} failed to retrieve results. " \
                                       f"Reason: {out}"
                             create_write_json_file(path_to_write, err_msg)
-                            logging.warning(err_msg)
+                            logger.warning(err_msg)
 
                         working_connectors_queue.remove(working_connector)
                 except Exception as e:
-                    pass  # todo - handle correctly
+                    logger.warning(
+                        f"Exception occurred when was checking subprocess of {connector_settings.connector_name}\n"
+                        f"exception msg: {str(e)}")
 
 
 if __name__ == "__main__":
