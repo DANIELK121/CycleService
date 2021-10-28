@@ -1,10 +1,11 @@
 import os
-import logging
 import requests as rq
+
 from commons.Errors import ErrorType, Error
 from datetime import datetime
 from SubProcessInputOutputHandler import SubProcessInputOutputHandler
 from commons.DataModels import ConnectorResult
+from commons.MyLogger import VirusTotalConnectorLogger
 
 VT_API_URL = 'https://www.virustotal.com/api/v3/domains/'
 RELEVANT_STATUSES = ["harmless", "suspicious", "malicious"]
@@ -17,7 +18,7 @@ DONE_SUFF = ".done"
 #  functions
 
 def retrieve_unprocessed_file_path(source_folder_path,
-                                   logger):  # todo - exception from here should terminate connector's activity
+                                   logger):
     file_name_to_process = None
     error = None
 
@@ -33,10 +34,10 @@ def retrieve_unprocessed_file_path(source_folder_path,
         error = Error(ErrorType.DIR_NOT_FOUND, source_folder_path)
 
     if error is not None:
-        logger.warning(error.get_full_error_msg())
+        logger.general_warning(error.get_full_error_msg())
         raise Exception(error)
 
-    return source_folder_path + "\\" + file_name_to_process # todo - check if there is more general way to do so - so it works on linux to
+    return f"{source_folder_path}/{file_name_to_process}"  # todo - check if there is more general way to do so - so it works on linux to
 
 
 def get_entities_from_file(unprocessed_file_path, iteration_entities_count, logger):
@@ -60,7 +61,7 @@ def get_entities_from_file(unprocessed_file_path, iteration_entities_count, logg
         error = Error(ErrorType.FILE_NOT_FOUND, unprocessed_file_path)
 
     if error is not None:
-        logger.warning(error.get_full_error_msg())
+        logger.general_warning(error.get_full_error_msg())
         raise Exception(error)
 
     return entities
@@ -76,12 +77,12 @@ def analyze_entities(entities, api_key, logger):
     fails = 0
     for domain in entities:
         try:
-            logger.debug(f"requesting information for domain {domain}")
+            logger.debug_request_domain_info(domain)
             response = rq.get(f"{VT_API_URL}{domain}", headers={"x-apikey": api_key})
             vt_response_json = response.json()
 
             if response.ok:
-                logger.debug(f"retrieved data successfully for domain {domain}")
+                logger.debug_retrieved_successfully_from_domain(domain)
                 attr = vt_response_json.get("data").get("attributes")
                 rep = attr.get("reputation")
 
@@ -126,42 +127,36 @@ def analyze_entities(entities, api_key, logger):
                     }
                 success += 1
             else:
-                logger.debug(f"failed to retrieve data for domain {domain}")
+                logger.debug_retrieve_domain_info_failed(domain)
                 alerts[domain] = vt_response_json.get("error").get("message")
                 fails += 1
         except Exception as e:
-            logger.debug(f"failed to retrieve data for domain {domain}")
+            logger.debug_retrieve_domain_info_failed(domain)
             alerts[domain] = str(e)
             fails += 1
-    logger.info(f"successfully retrieved: {success} domains. "
-                f"failed to retrieve: {fails} domains")
+    logger.info_retrieve_results(success, fails)
     return alerts
 
 
-def mark_file_as_done(unprocessed_file_path, logger):
+def mark_file_as_done(unprocessed_file_path, logger: VirusTotalConnectorLogger):
     new_name = unprocessed_file_path + DONE_SUFF
     os.rename(unprocessed_file_path, new_name)
-    logger.debug(f"marked {unprocessed_file_path} as done")
+    logger.debug_marked_file_done(unprocessed_file_path)
 
 
 def main():
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                        datefmt='%H:%M:%S')
 
     io_mgr = SubProcessInputOutputHandler()
     connector_params = io_mgr.connector_params
     connector_result = ConnectorResult()
 
-    logger = logging.getLogger(connector_params.connector_name)
+    logger = VirusTotalConnectorLogger(connector_params.connector_name)
     try:
-        logger.info(f"Looking for file to process in {connector_params.source_folder_path}")
+        logger.info_looking_file_in_folder(connector_params.source_folder_path)
         unprocessed_file_path = retrieve_unprocessed_file_path(connector_params.source_folder_path, logger)
-        logger.info(f"Starting to process file named {unprocessed_file_path}")
+        logger.info_file_processing(unprocessed_file_path)
         entities = get_entities_from_file(unprocessed_file_path, connector_params.iteration_entities_count, logger)
-        logger.info(
-            f"Max entities to retrieve is {connector_params.iteration_entities_count}. "
-            f"Retrieved {len(entities)} entities from file {unprocessed_file_path}")
+        logger.info_num_of_retrieved_entities_from_file(len(entities), unprocessed_file_path)
 
         connector_result.alerts = analyze_entities(entities, connector_params.api_key, logger)
         # mark_file_as_done(unprocessed_file_path, logger)  # todo - keep uncommented
