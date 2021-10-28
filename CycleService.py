@@ -44,10 +44,7 @@ def get_last_sync_time(output_folder_path):
 
 
 def is_dir_empty(output_folder_path):
-    if os.listdir(output_folder_path):
-        return False
-    else:
-        return True
+    return len(os.listdir(output_folder_path)) == 0
 
 
 def validate_or_create_folder(output_folder_path):

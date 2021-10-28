@@ -37,7 +37,7 @@ def retrieve_unprocessed_file_path(source_folder_path,
         logger.general_warning(error.get_full_error_msg())
         raise Exception(error)
 
-    return f"{source_folder_path}/{file_name_to_process}"  # todo - check if there is more general way to do so - so it works on linux to
+    return f"{source_folder_path}/{file_name_to_process}"
 
 
 def get_entities_from_file(unprocessed_file_path, iteration_entities_count, logger):
