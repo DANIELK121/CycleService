@@ -2,6 +2,8 @@ import json
 import os
 import subprocess
 import sys
+import time
+
 from commons import DataModels
 from datetime import datetime
 
@@ -46,7 +48,6 @@ def create_write_json_file(path_to_write, data):
     with open(path_to_write, 'w') as file:
         json.dump(data, file, indent=4)
 
-
 def run_subprocess(script_file_path):
     proc = None
     if os.path.isfile(script_file_path):
@@ -86,6 +87,7 @@ def main():
                             # writing params as a line to STDIN so the connector can read it as a line
                             proc.stdin.write(f"{json.dumps(connector_settings.params)}\n")
                             proc.stdin.flush()
+                            # add thread that is reading from subprocess (using proc.comunicate)
                             # adding working process to queue
                             working_connectors_processes_queue[connector_run_params] = proc
                         else:
@@ -101,6 +103,7 @@ def main():
             proc = working_connectors_processes_queue[connector_run_params]
             connector_settings = connector_run_params.connector_settings
             try:
+                time.sleep(0.1)  # give subprocesses time to work
                 return_code = proc.poll()
                 # checking if process finished
                 if return_code is not None:
@@ -134,12 +137,16 @@ def main():
 if __name__ == "__main__":
     main()
 
-# todo delete
-# elif return_code == NO_RECOVER:
-#     # unrecoverable condition. removing connector settings from execution list
-#     connector_output = f"{connector_settings.connector_name} encountered unrecoverable condition. " \
-#                        f"Reason: {out}. " \
-#                        f"removing {connector_settings.connector_name} settings from execution list"
-#     # connector_run_params_arr.remove(connector_run_params)
-# 764a3612e57edf835b1ddb74ca4cf5b51e1a37a62155cede27701961f891173c
-# 4524af8cd44905528c20ca0c23f9a74dd640bcc10fdeeb3f60fbddea8561a7a1
+# todo configuration of connector 2
+# ,
+#   {
+#     "run_interval_seconds" : 5,
+#     "script_file_path" : "VirusTotalConnector.py",
+#     "connector_name" : "VTConnector2",
+#     "params" : {
+#       "source_folder_path" : "source_folders/source_files_2",
+#       "iteration_entities_count" : 5,
+#       "api_key" : "84d6a4ebc489387bde35e79aad1f92633e9af72830650bd153dbc9bfd42402c9"
+#     },
+#     "output_folder_path" : ""
+#   }
