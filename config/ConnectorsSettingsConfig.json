@@ -5,7 +5,7 @@
     "connector_name" : "",
     "params" : {
       "source_folder_path" : "source_folders/source_files_1",
-      "iteration_entities_count" : 5,
+      "iteration_entities_count" : 100,
       "api_key": "4524af8cd44905528c20ca0c23f9a74dd640bcc10fdeeb3f60fbddea8561a7a1"
     },
     "output_folder_path" : "output_folders/VTConnector1_output"

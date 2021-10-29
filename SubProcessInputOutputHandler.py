@@ -3,9 +3,9 @@ from commons.DataModels import ConnectorParams
 import json
 import sys
 from commons.Errors import ErrorType
-from commons.Utils import get_param_or_default, SUCCESS, NO_RECOVER, ABORT
+from commons.Utils import get_param_or_default, SUCCESS, ABORT
 
-UNRECOVERABLE_ERRORS = [ErrorType.MISSING_MANDATORY_PARAM.name, ErrorType.DIR_NOT_FOUND.name]
+# UNRECOVERABLE_ERRORS = [ErrorType.MISSING_MANDATORY_PARAM.name, ErrorType.DIR_NOT_FOUND.name]
 
 
 class SubProcessInputOutputHandler(object):

@@ -60,7 +60,7 @@ def run_subprocess(script_file_path):
 
 def main():
     logger = CycleServiceLogger(SERVICE_NAME)
-    working_connectors_processes_queue = []
+    working_connectors_processes_queue = dict()
 
     # loading connectors' settings
     connectors_settings_config_file = open(CONFIG_FILE_PATH, "r")
@@ -76,8 +76,8 @@ def main():
             try:
                 # if last_sync is None or
                 # connector's run_interval_seconds has passed since last_sync - try to activate connector
-                if connector_run_params.last_sync is None or (
-                        datetime.now() - connector_run_params.last_sync).total_seconds() >= connector_settings.run_interval_seconds:
+                if connector_run_params not in working_connectors_processes_queue.keys() and \
+                        (connector_run_params.last_sync is None or (datetime.now() - connector_run_params.last_sync).total_seconds() >= connector_settings.run_interval_seconds):
                     # check presence of mandatory params
                     if connector_settings.params and connector_settings.script_file_path:
                         output_folder_path = connector_settings.output_folder_path
@@ -89,7 +89,7 @@ def main():
                             proc.stdin.write(f"{json.dumps(connector_settings.params)}\n")
                             proc.stdin.flush()
                             # adding working process to queue
-                            working_connectors_processes_queue.append([connector_run_params, proc])
+                            working_connectors_processes_queue[connector_run_params] = proc
                         else:
                             logger.warn_not_valid_file_path(connector_settings.script_file_path)
                     else:
@@ -98,39 +98,38 @@ def main():
             except Exception as e:
                 logger.warn_exception_when_checking("connector run params", connector_settings.connector_name, str(e))
 
-        while len(working_connectors_processes_queue) > 0:
-            for working_connector in list(working_connectors_processes_queue):
-                connector_run_params, proc = working_connector[0], working_connector[1]
-                connector_settings = connector_run_params.connector_settings
-                try:
-                    return_code = proc.poll()
-                    # checking if process finished
-                    if return_code is not None:
-                        # timestamp of data syncing
-                        timestamp = datetime.now()
-                        timestamp_string = timestamp.strftime(DATE_FORMAT)
-                        connector_run_params.last_sync = timestamp
+        for connector_run_params in list(working_connectors_processes_queue.keys()):
+            proc = working_connectors_processes_queue[connector_run_params]
+            connector_settings = connector_run_params.connector_settings
+            try:
+                return_code = proc.poll()
+                # checking if process finished
+                if return_code is not None:
+                    # timestamp of data syncing
+                    timestamp = datetime.now()
+                    timestamp_string = timestamp.strftime(DATE_FORMAT)
+                    connector_run_params.last_sync = timestamp
 
-                        out, err = proc.communicate()
-                        # save results to a file named by timestamp and connector's name
-                        path_to_write = f'{connector_settings.output_folder_path}/{connector_settings.connector_name}-{timestamp_string}.json'
-                        if return_code == SUCCESS:
-                            connector_output = json.loads(out)
-                            logger.info_successful_completion(connector_settings.connector_name, path_to_write)
-                        elif return_code == ABORT:
-                            # something went wrong - no results. writing error msg to file
-                            connector_output = f"Connector {connector_settings.connector_name} failed to retrieve results. " \
-                                               f"Reason: {out}"
-                        else:
-                            # unknown error. writing error msg to file
-                            connector_output = f"{connector_settings.connector_name} encountered unexpected error. " \
-                                               f"Reason: {out}"
+                    out, err = proc.communicate()
+                    # save results to a file named by timestamp and connector's name
+                    path_to_write = f'{connector_settings.output_folder_path}/{connector_settings.connector_name}-{timestamp_string}.json'
+                    if return_code == SUCCESS:
+                        connector_output = json.loads(out)
+                        logger.info_successful_completion(connector_settings.connector_name, path_to_write)
+                    elif return_code == ABORT:
+                        # something went wrong - no results. writing error msg to file
+                        connector_output = f"Connector {connector_settings.connector_name} failed to retrieve results. " \
+                                           f"Reason: {out}"
+                    else:
+                        # unknown error. writing error msg to file
+                        connector_output = f"{connector_settings.connector_name} encountered unexpected error. " \
+                                           f"Reason: {out}"
 
-                        if return_code != SUCCESS: logger.general_warning(connector_output)
-                        create_write_json_file(path_to_write, connector_output)
-                        working_connectors_processes_queue.remove(working_connector)
-                except Exception as e:
-                    logger.warn_exception_when_checking("subprocess", connector_settings.connector_name, str(e))
+                    if return_code != SUCCESS: logger.general_warning(connector_output)
+                    create_write_json_file(path_to_write, connector_output)
+                    del working_connectors_processes_queue[connector_run_params]
+            except Exception as e:
+                logger.warn_exception_when_checking("subprocess", connector_settings.connector_name, str(e))
 
 
 if __name__ == "__main__":
