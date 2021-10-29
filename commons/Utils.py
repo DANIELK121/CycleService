@@ -1,5 +1,3 @@
-import os
-
 SUCCESS = 0
 ABORT = 1
 NO_RECOVER = 2

@@ -1,4 +1,3 @@
-import glob
 import json
 import os
 import subprocess
@@ -38,21 +37,6 @@ def create_connector_settings_object(connector_settings_json, index, logger):
     if not (connector_settings.script_file_path and connector_settings.params):
         logger.warn_mandatory_params_missing(connector_settings.connector_name)
     return connector_settings
-
-
-def get_last_sync_time(output_folder_path):
-    list_of_files = glob.glob(f"{output_folder_path}/*")
-    # get latest written file in folder
-    latest_file = max(list_of_files, key=os.path.getctime)
-    # file name format: VTConnector2-D10-26-2021T14-35-40.json
-    last_file_timestamp = latest_file.split('.')[0].split('-', 1)[1]
-    return datetime.strptime(last_file_timestamp, DATE_FORMAT)
-
-def datetime_from_string(date_string):
-    return datetime.strptime(date_string, DATE_FORMAT)
-
-def is_dir_empty(output_folder_path):
-    return len(os.listdir(output_folder_path)) == 0
 
 
 def validate_or_create_folder(output_folder_path):
@@ -98,8 +82,7 @@ def main():
                 validate_or_create_folder(output_folder_path)
                 # if last_sync is None or
                 # connector's run_interval_seconds has passed since last_sync - activate connector
-                if connector_run_params.last_sync is None or (datetime.now() - datetime_from_string(connector_run_params.last_sync))\
-                        .total_seconds() >= connector_settings.run_interval_seconds:
+                if connector_run_params.last_sync is None or (datetime.now() - connector_run_params.last_sync).total_seconds() >= connector_settings.run_interval_seconds:
                     if proc := run_subprocess(connector_settings.script_file_path):
                         logger.info_connector_activation(connector_settings.connector_name)
                         # writing params as a line to STDIN so the connector can read it as a line
@@ -123,12 +106,13 @@ def main():
                     # checking if process finished
                     if return_code is not None:
                         # timestamp of data syncing
-                        timestamp = datetime.now().strftime(DATE_FORMAT)
+                        timestamp = datetime.now()
+                        timestamp_string = timestamp.strftime(DATE_FORMAT)
                         connector_run_params.last_sync = timestamp
 
                         out, err = proc.communicate()
                         # save results to a file named by timestamp and connector's name
-                        path_to_write = f'{connector_settings.output_folder_path}/{connector_settings.connector_name}-{timestamp}.json'
+                        path_to_write = f'{connector_settings.output_folder_path}/{connector_settings.connector_name}-{timestamp_string}.json'
                         if return_code == SUCCESS:
                             connector_output = json.loads(out)
                             logger.info_successful_completion(connector_settings.connector_name, path_to_write)
