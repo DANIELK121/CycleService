@@ -91,15 +91,15 @@ def analyze_entities(entities, api_key, logger):
                     total_votes = attr.get("total_votes")
                     last_mod_date = attr.get("last_modification_date")
 
-                    if 0 <= rep:
+                    if -10 <= rep:
                         harmless = last_analysis_stats.get("harmless")
                         suspicious = last_analysis_stats.get("suspicious")
                         malicious = last_analysis_stats.get("malicious")
 
                         if malicious > 0:
-                            reason = "0 <= reputation <= 20 and domain flagged as malicious by one or more security vendors"
+                            reason = "Absolute value of reputation is low, but domain flagged as malicious by one or more security vendors"
                         elif suspicious / (suspicious + harmless) > 0.05:
-                            reason = "0 <= reputation <= 20 and domain flagged as suspicious by at least 5% of security vendors"
+                            reason = "Absolute value of reputation is low, but domain flagged as suspicious by at least 5% of security vendors"
                         else:
                             alerts[domain] = {
                                 "status": "Not Suspicious"
@@ -108,7 +108,7 @@ def analyze_entities(entities, api_key, logger):
                             continue
 
                     else:
-                        reason = "rep < 0"
+                        reason = "High negative reputation"
 
                     alerts[domain] = {
                         "status": "Suspicious",
