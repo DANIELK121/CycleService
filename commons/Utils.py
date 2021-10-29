@@ -1,6 +1,5 @@
 SUCCESS = 0
 ABORT = 1
-NO_RECOVER = 2
 
 
 def get_param_or_default(key, json_obj, expected_type, default):

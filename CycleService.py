@@ -6,7 +6,7 @@ from commons import DataModels
 from datetime import datetime
 
 from commons.MyLogger import CycleServiceLogger
-from commons.Utils import get_param_or_default, SUCCESS, NO_RECOVER, ABORT
+from commons.Utils import get_param_or_default, SUCCESS, ABORT
 
 DATE_FORMAT = "D%m-%d-%YT%H-%M-%S"
 SERVICE_NAME = "CycleService"
@@ -34,8 +34,6 @@ def create_connector_settings_object(connector_settings_json, index, logger):
     if connector_settings.params is not None:
         connector_settings.params["connector_name"] = connector_settings.connector_name
 
-    # if not (connector_settings.script_file_path and connector_settings.params):
-    #     logger.warn_mandatory_params_missing(connector_settings.connector_name)
     return connector_settings
 
 
@@ -91,7 +89,8 @@ def main():
                             # adding working process to queue
                             working_connectors_processes_queue[connector_run_params] = proc
                         else:
-                            logger.warn_not_valid_file_path(connector_settings.script_file_path)
+                            connector_run_params.last_sync = datetime.now()
+                            logger.warn_not_valid_file_path(connector_settings.connector_name, connector_settings.script_file_path)
                     else:
                         connector_run_params.last_sync = datetime.now()
                         logger.warn_mandatory_params_missing(connector_settings.connector_name)
@@ -115,6 +114,7 @@ def main():
                     path_to_write = f'{connector_settings.output_folder_path}/{connector_settings.connector_name}-{timestamp_string}.json'
                     if return_code == SUCCESS:
                         connector_output = json.loads(out)
+                        create_write_json_file(path_to_write, connector_output)
                         logger.info_successful_completion(connector_settings.connector_name, path_to_write)
                     elif return_code == ABORT:
                         # something went wrong - no results. writing error msg to file
@@ -126,7 +126,6 @@ def main():
                                            f"Reason: {out}"
 
                     if return_code != SUCCESS: logger.general_warning(connector_output)
-                    create_write_json_file(path_to_write, connector_output)
                     del working_connectors_processes_queue[connector_run_params]
             except Exception as e:
                 logger.warn_exception_when_checking("subprocess", connector_settings.connector_name, str(e))
@@ -142,3 +141,5 @@ if __name__ == "__main__":
 #                        f"Reason: {out}. " \
 #                        f"removing {connector_settings.connector_name} settings from execution list"
 #     # connector_run_params_arr.remove(connector_run_params)
+# 764a3612e57edf835b1ddb74ca4cf5b51e1a37a62155cede27701961f891173c
+# 4524af8cd44905528c20ca0c23f9a74dd640bcc10fdeeb3f60fbddea8561a7a1

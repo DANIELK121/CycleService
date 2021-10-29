@@ -74,9 +74,6 @@ if __name__ == "__main__":  # ensure the script is run directl
     # else:
     #     print("not")
 
-    d = {"a": 1, "b":2}
-    a = list(d.keys())
-    print(a)
-    del d["a"]
-    print(a)
+    a = {}
+    print(isinstance(a, dict))
     pass

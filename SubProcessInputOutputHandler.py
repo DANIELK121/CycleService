@@ -5,8 +5,6 @@ import sys
 from commons.Errors import ErrorType
 from commons.Utils import get_param_or_default, SUCCESS, ABORT
 
-# UNRECOVERABLE_ERRORS = [ErrorType.MISSING_MANDATORY_PARAM.name, ErrorType.DIR_NOT_FOUND.name]
-
 
 class SubProcessInputOutputHandler(object):
 
@@ -31,18 +29,22 @@ class SubProcessInputOutputHandler(object):
                 f"Error in SubProcessInputOutputHandler::connector_params: {e}"))
 
     def end(self, connector_result):
-        if isinstance(connector_result, DataModels.ConnectorResult):
-            output = json.dumps(connector_result.alerts)
-            return_code = SUCCESS
-        else:
-            # connector_result is of type Exception
-            # output, return_code = self.extract_exception(connector_result)
-            output = str(connector_result)
-            return_code = ABORT
-        # pass connector output as stdout
-        sys.stdout.write(output)
-        # end current process
-        exit(return_code)
+        try:
+            if isinstance(connector_result, DataModels.ConnectorResult):
+                output = json.dumps(connector_result.alerts)
+                return_code = SUCCESS
+            else:
+                # connector_result is of type Exception
+                # output, return_code = self.extract_exception(connector_result)
+                output = str(connector_result)
+                return_code = ABORT
+            # pass connector output as stdout
+            sys.stdout.write(output)
+            # end current process
+            exit(return_code)
+        except Exception as e:
+            sys.stdout.write(str(e))
+            exit(ABORT)
 
     def get_param_or_exit(self, key, json_obj, expected_type):
         if key in json_obj.keys() and json_obj.get(key) and isinstance(
@@ -50,18 +52,3 @@ class SubProcessInputOutputHandler(object):
             return json_obj.get(key)
         else:
             self.end(ErrorType.MISSING_MANDATORY_PARAM.get_full_err_msg(key))
-
-
-    # todo delete
-    # def extract_exception(self, e):
-    #     exception_arg = e.args[0]
-    #     if isinstance(exception_arg, Error):
-    #         if exception_arg.error_type.name in UNRECOVERABLE_ERRORS:
-    #             return_code = NO_RECOVER
-    #         else:
-    #             return_code = ABORT
-    #         output = exception_arg.get_full_error_msg()
-    #     else:
-    #         output = str(e)
-    #         return_code = ABORT
-    #     return output, return_code

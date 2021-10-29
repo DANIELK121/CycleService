@@ -33,13 +33,13 @@ class CycleServiceLogger(MyLogger):
 
     def warn_mandatory_params_missing(self, connector_name):
         self.logger.warning(
-            f"{connector_name} doesn't have mandatory params! it can't be scheduled to run")
+            f"mandatory params (connector params/script file path) for {connector_name} are missing! it can't be scheduled to run")
 
     def info_connector_activation(self, connector_name):
         self.logger.info(f"activated {connector_name} successfully")
 
-    def warn_not_valid_file_path(self, file_path):
-        self.logger.warning(f"{file_path} is not a valid file path")
+    def warn_not_valid_file_path(self, connector_name, file_path):
+        self.logger.warning(f"can't start {connector_name}, {file_path} is not a valid file path")
 
     def warn_exception_when_checking(self, checking, connector_name, exc_msg):
         self.logger.warning(

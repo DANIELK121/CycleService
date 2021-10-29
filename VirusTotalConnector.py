@@ -44,21 +44,24 @@ def get_entities_from_file(unprocessed_file_path, iteration_entities_count, logg
     entities = []
     error = None
 
-    if os.path.isfile(unprocessed_file_path):
-        with open(unprocessed_file_path, 'r') as file:
-            while iteration_entities_count > 0:
-                line = file.readline()
-                if not line:
-                    break
+    if iteration_entities_count > 0:
+        if os.path.isfile(unprocessed_file_path):
+            with open(unprocessed_file_path, 'r') as file:
+                while iteration_entities_count > 0:
+                    line = file.readline()
+                    if not line:
+                        break
 
-                entities.append(line.strip())
-                iteration_entities_count -= 1
+                    entities.append(line.strip())
+                    iteration_entities_count -= 1
 
-        if len(entities) == 0:
-            mark_file_as_done(unprocessed_file_path, logger)
-            error = ErrorType.EMPTY_FILE.get_full_err_msg(unprocessed_file_path)
+            if len(entities) == 0:
+                mark_file_as_done(unprocessed_file_path, logger)
+                error = ErrorType.EMPTY_FILE.get_full_err_msg(unprocessed_file_path)
+        else:
+            error = ErrorType.FILE_NOT_FOUND.get_full_err_msg(unprocessed_file_path)
     else:
-        error = ErrorType.FILE_NOT_FOUND.get_full_err_msg(unprocessed_file_path)
+        error = ErrorType.INVALID_ITERATION_ENTITIES_COUNT.get_full_err_msg(iteration_entities_count)
 
     if error is not None:
         logger.general_warning(error)
