@@ -15,3 +15,8 @@ class ConnectorParams(object):
 
 class ConnectorResult(object):
     alerts = None  # Dictionary {string, any} - connector output with data per entity. Key = Entity, value = entity data
+
+
+class ConnectorRunParams(object):
+    connector_settings = None  # ConnectorSettings
+    last_sync = None
