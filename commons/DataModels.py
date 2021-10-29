@@ -19,4 +19,4 @@ class ConnectorResult(object):
 
 class ConnectorRunParams(object):
     connector_settings = None  # ConnectorSettings
-    last_sync = None
+    last_sync = None  # datetime - timestamp of last sync

@@ -1,7 +1,7 @@
 import os
 import requests as rq
 
-from commons.Errors import ErrorType, Error
+from commons.Errors import ErrorType
 from datetime import datetime
 from SubProcessInputOutputHandler import SubProcessInputOutputHandler
 from commons.DataModels import ConnectorResult
@@ -29,9 +29,9 @@ def retrieve_unprocessed_file_path(source_folder_path,
                 break
 
         if file_name_to_process is None:
-            error = Error(ErrorType.NO_FILES_TO_PROCESS, source_folder_path)
+            error = ErrorType.NO_FILES_TO_PROCESS.get_full_err_msg(source_folder_path)
     else:
-        error = Error(ErrorType.DIR_NOT_FOUND, source_folder_path)
+        error = ErrorType.DIR_NOT_FOUND.get_full_err_msg(source_folder_path)
 
     if error is not None:
         logger.general_warning(error.get_full_error_msg())
@@ -56,9 +56,9 @@ def get_entities_from_file(unprocessed_file_path, iteration_entities_count, logg
 
         if len(entities) == 0:
             mark_file_as_done(unprocessed_file_path, logger)
-            error = Error(ErrorType.EMPTY_FILE, unprocessed_file_path)
+            error = ErrorType.EMPTY_FILE.get_full_err_msg(unprocessed_file_path)
     else:
-        error = Error(ErrorType.FILE_NOT_FOUND, unprocessed_file_path)
+        error = ErrorType.FILE_NOT_FOUND.get_full_err_msg(unprocessed_file_path)
 
     if error is not None:
         logger.general_warning(error.get_full_error_msg())

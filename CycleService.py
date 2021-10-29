@@ -34,8 +34,8 @@ def create_connector_settings_object(connector_settings_json, index, logger):
     if connector_settings.params is not None:
         connector_settings.params["connector_name"] = connector_settings.connector_name
 
-    if not (connector_settings.script_file_path and connector_settings.params):
-        logger.warn_mandatory_params_missing(connector_settings.connector_name)
+    # if not (connector_settings.script_file_path and connector_settings.params):
+    #     logger.warn_mandatory_params_missing(connector_settings.connector_name)
     return connector_settings
 
 
@@ -67,33 +67,34 @@ def main():
     connectors_settings_json_arr = json.load(connectors_settings_config_file)
 
     # initialization of ConnectorRunParams with ConnectorSettings for each connector
-    connector_run_params_arr = [connector_run_params for
-                              index, connector_settings_json in enumerate(connectors_settings_json_arr)
-                              if (connector_run_params := create_connector_run_params(connector_settings_json, index,
-                                                                                         logger)).connector_settings.script_file_path
-                              and connector_run_params.connector_settings.params]
+    connector_run_params_arr = [create_connector_run_params(connector_settings_json, index, logger) for
+                                index, connector_settings_json in enumerate(connectors_settings_json_arr)]
 
     while True:
         for connector_run_params in list(connector_run_params_arr):
             connector_settings = connector_run_params.connector_settings
             try:
-                output_folder_path = connector_settings.output_folder_path
-                # checks that output folder exists. creates the named folder if it is not exist already
-                validate_or_create_folder(output_folder_path)
                 # if last_sync is None or
-                # connector's run_interval_seconds has passed since last_sync - activate connector
-                if connector_run_params.last_sync is None or (datetime.now() - connector_run_params.last_sync).total_seconds() >= connector_settings.run_interval_seconds:
-                    if proc := run_subprocess(connector_settings.script_file_path):
-                        logger.info_connector_activation(connector_settings.connector_name)
-                        # writing params as a line to STDIN so the connector can read it as a line
-                        proc.stdin.write(f"{json.dumps(connector_settings.params)}\n")
-                        proc.stdin.flush()
-                        # adding working process to queue
-                        working_connectors_processes_queue.append([connector_run_params, proc])
+                # connector's run_interval_seconds has passed since last_sync - try to activate connector
+                if connector_run_params.last_sync is None or (
+                        datetime.now() - connector_run_params.last_sync).total_seconds() >= connector_settings.run_interval_seconds:
+                    # check presence of mandatory params
+                    if connector_settings.params and connector_settings.script_file_path:
+                        output_folder_path = connector_settings.output_folder_path
+                        # checks that output folder exists. creates the folder if not
+                        validate_or_create_folder(output_folder_path)
+                        if proc := run_subprocess(connector_settings.script_file_path):
+                            logger.info_connector_activation(connector_settings.connector_name)
+                            # writing params as a line to STDIN so the connector can read it as a line
+                            proc.stdin.write(f"{json.dumps(connector_settings.params)}\n")
+                            proc.stdin.flush()
+                            # adding working process to queue
+                            working_connectors_processes_queue.append([connector_run_params, proc])
+                        else:
+                            logger.warn_not_valid_file_path(connector_settings.script_file_path)
                     else:
-                        logger.warn_not_valid_file_path(connector_settings.script_file_path,
-                                                        connector_settings.connector_name)
-                        connector_run_params_arr.remove(connector_run_params)
+                        connector_run_params.last_sync = datetime.now()
+                        logger.warn_mandatory_params_missing(connector_settings.connector_name)
             except Exception as e:
                 logger.warn_exception_when_checking("connector run params", connector_settings.connector_name, str(e))
 
@@ -120,15 +121,9 @@ def main():
                             # something went wrong - no results. writing error msg to file
                             connector_output = f"Connector {connector_settings.connector_name} failed to retrieve results. " \
                                                f"Reason: {out}"
-                        elif return_code == NO_RECOVER:
-                            # unrecoverable condition. removing connector settings from execution list
-                            connector_output = f"{connector_settings.connector_name} encountered unrecoverable condition. " \
-                                               f"Reason: {out}. " \
-                                               f"removing {connector_settings.connector_name} settings from execution list"
-                            connector_run_params_arr.remove(connector_run_params)
                         else:
                             # unknown error. writing error msg to file
-                            connector_output = f"{connector_settings.connector_name} encountered an unexpected error. " \
+                            connector_output = f"{connector_settings.connector_name} encountered unexpected error. " \
                                                f"Reason: {out}"
 
                         if return_code != SUCCESS: logger.general_warning(connector_output)
@@ -140,3 +135,11 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# todo delete
+# elif return_code == NO_RECOVER:
+#     # unrecoverable condition. removing connector settings from execution list
+#     connector_output = f"{connector_settings.connector_name} encountered unrecoverable condition. " \
+#                        f"Reason: {out}. " \
+#                        f"removing {connector_settings.connector_name} settings from execution list"
+#     # connector_run_params_arr.remove(connector_run_params)
