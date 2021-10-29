@@ -34,7 +34,7 @@ def retrieve_unprocessed_file_path(source_folder_path,
         error = ErrorType.DIR_NOT_FOUND.get_full_err_msg(source_folder_path)
 
     if error is not None:
-        logger.general_warning(error.get_full_error_msg())
+        logger.general_warning(error)
         raise Exception(error)
 
     return f"{source_folder_path}/{file_name_to_process}"
@@ -61,7 +61,7 @@ def get_entities_from_file(unprocessed_file_path, iteration_entities_count, logg
         error = ErrorType.FILE_NOT_FOUND.get_full_err_msg(unprocessed_file_path)
 
     if error is not None:
-        logger.general_warning(error.get_full_error_msg())
+        logger.general_warning(error)
         raise Exception(error)
 
     return entities

@@ -67,8 +67,8 @@ class VirusTotalConnectorLogger(MyLogger):
             f"Retrieved {num_of_entities} entities from file {file_path}")
 
     def info_retrieve_results(self, success, fails):
-        self.logger.info(f"successfully retrieved: {success} domains. "
-                         f"failed to retrieve: {fails} domains")
+        self.logger.info(f"successfully retrieved info for: {success} domain(s). "
+                         f"failed to retrieve info for: {fails} domain(s)")
 
     def debug_request_domain_info(self, domain):
         self.logger.debug(f"requesting information for domain {domain}")

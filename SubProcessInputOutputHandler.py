@@ -27,8 +27,8 @@ class SubProcessInputOutputHandler(object):
 
             return result
         except Exception as e:
-            self.end(Exception(ErrorType.LOCAL_ERROR.get_full_err_msg(
-                f"Error in SubProcessInputOutputHandler::connector_params: {e}")))
+            self.end(ErrorType.LOCAL_ERROR.get_full_err_msg(
+                f"Error in SubProcessInputOutputHandler::connector_params: {e}"))
 
     def end(self, connector_result):
         if isinstance(connector_result, DataModels.ConnectorResult):
@@ -37,7 +37,7 @@ class SubProcessInputOutputHandler(object):
         else:
             # connector_result is of type Exception
             # output, return_code = self.extract_exception(connector_result)
-            output = str(connector_result.args[0])
+            output = str(connector_result)
             return_code = ABORT
         # pass connector output as stdout
         sys.stdout.write(output)
@@ -49,7 +49,7 @@ class SubProcessInputOutputHandler(object):
                 json_obj.get(key), expected_type):
             return json_obj.get(key)
         else:
-            self.end(Exception(ErrorType.MISSING_MANDATORY_PARAM.get_full_err_msg(key)))
+            self.end(ErrorType.MISSING_MANDATORY_PARAM.get_full_err_msg(key))
 
 
     # todo delete
