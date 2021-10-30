@@ -12,6 +12,10 @@ RELEVANT_STATUSES = ["harmless", "suspicious", "malicious"]
 DATE_FORMAT = '%m-%d-%Y %H:%M:%S'
 TEXT_SUFF = ".txt"
 DONE_SUFF = ".done"
+POSITIVE_BOUNDARY = 20
+NEGATIVE_BOUNDARY = -10
+MALICIOUS_LOWER_BOUNDARY = 0
+SUSPICIOUS_LOWER_BOUNDARY = 0.05
 
 
 def retrieve_unprocessed_file_path(source_folder_path,
@@ -86,20 +90,20 @@ def analyze_entities(entities, api_key, logger):
                 attr = vt_response_json.get("data").get("attributes")
                 rep = attr.get("reputation")
 
-                if rep <= 20:
+                if rep <= POSITIVE_BOUNDARY:
                     last_analysis_stats = attr.get("last_analysis_stats")
                     total_votes = attr.get("total_votes")
                     last_mod_date = attr.get("last_modification_date")
 
-                    if -10 <= rep:
+                    if NEGATIVE_BOUNDARY <= rep:
                         harmless = last_analysis_stats.get("harmless")
                         suspicious = last_analysis_stats.get("suspicious")
                         malicious = last_analysis_stats.get("malicious")
 
-                        if malicious > 0:
-                            reason = "Absolute value of reputation is low, but domain flagged as malicious by one or more security vendors"
-                        elif suspicious / (suspicious + harmless) > 0.05:
-                            reason = "Absolute value of reputation is low, but domain flagged as suspicious by at least 5% of security vendors"
+                        if malicious > MALICIOUS_LOWER_BOUNDARY:
+                            reason = "Absolute value of reputation is low, but domain flagged as malicious by one or more URL scanners"
+                        elif suspicious / (suspicious + harmless) > SUSPICIOUS_LOWER_BOUNDARY:
+                            reason = "Absolute value of reputation is low, but domain flagged as suspicious by at least 5% of URL scanners"
                         else:
                             alerts[domain] = {
                                 "status": "Not Suspicious"
@@ -116,7 +120,7 @@ def analyze_entities(entities, api_key, logger):
                         "reputation": rep,
                         "unweighted_total_votes": ', '.join([f'{value} community members voted this domain as {status}'
                                                              for status, value in total_votes.items()]),
-                        "last_analysis_stats": ', '.join([f'{value} security vendors flagged this domain as {status}'
+                        "last_analysis_stats": ', '.join([f'{value} URL scanners flagged this domain as {status}'
                                                           for status, value in last_analysis_stats.items()
                                                           if status in RELEVANT_STATUSES]),
                         "last_information_modification_date": get_date_from_utc(last_mod_date)
@@ -159,7 +163,7 @@ def main():
         logger.info_num_of_retrieved_entities_from_file(len(entities), unprocessed_file_path)
 
         connector_result.alerts = analyze_entities(entities, connector_params.api_key, logger)
-        mark_file_as_done(unprocessed_file_path, logger)  # todo - keep uncommented
+        mark_file_as_done(unprocessed_file_path, logger)
 
         io_mgr.end(connector_result)
     except Exception as e:

@@ -33,9 +33,9 @@ def _analyze_entities(entities, alerts):
                 malicious = last_analysis_stats.get("malicious")
 
                 if malicious > 0:
-                    reason = "0 <= reputation <= 20 and domain flagged as malicious by one or more security vendors"
+                    reason = "0 <= reputation <= 20 and domain flagged as malicious by one or more URL scanners"
                 elif suspicious / (suspicious + harmless) > 0.05:
-                    reason = "0 <= reputation <= 20 and domain flagged as suspicious by at least 5% of security vendors"
+                    reason = "0 <= reputation <= 20 and domain flagged as suspicious by at least 5% of URL scanners"
                 else:
                     alerts[domain_name] = {
                         "status": "Not Suspicious"
@@ -51,7 +51,7 @@ def _analyze_entities(entities, alerts):
                 "reputation": rep,
                 "unweighted_total_votes": ', '.join([f'{value} community members voted this domain as {status}'
                                                      for status, value in total_votes.items()]),
-                "last_analysis_stats": ', '.join([f'{value} security vendors flagged this domain as {status}'
+                "last_analysis_stats": ', '.join([f'{value} URL scanners flagged this domain as {status}'
                                                   for status, value in last_analysis_stats.items()
                                                   if status in RELEVANT_STATUSES]),
                 "last_modification_date": last_mod_date
