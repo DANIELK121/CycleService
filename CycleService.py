@@ -40,6 +40,7 @@ def create_connector_settings_object(connector_settings_json, index, logger):
     return connector_settings
 
 
+# checks that output folder exists. creates the folder if not
 def validate_or_create_folder(output_folder_path):
     if not os.path.isdir(output_folder_path):
         os.mkdir(output_folder_path)
@@ -88,25 +89,28 @@ def main():
                 # if last_sync is None or
                 # connector's run_interval_seconds has passed since last_sync - try to activate connector
                 if connector_run_params not in connector_settings_to_subproc_future_dict.keys() and \
-                        (connector_run_params.last_sync is None or (datetime.now() - connector_run_params.last_sync).total_seconds() >= connector_settings.run_interval_seconds):
-                    # check presence of mandatory params
-                    if connector_settings.params and connector_settings.script_file_path:
-                        output_folder_path = connector_settings.output_folder_path
-                        # checks that output folder exists. creates the folder if not
-                        validate_or_create_folder(output_folder_path)
-                        if proc := run_subprocess(connector_settings.script_file_path):
-                            logger.info_connector_activation(connector_settings.connector_name)
-                            # async reading from subprocess so it's STDOUT buffer won't get full
-                            # will write params as a line to STDIN so the connector can read it as a line
-                            fut = executor.submit(communicate_subprocess, proc, json.dumps(connector_settings.params))
-                            # adding working process to queue
-                            connector_settings_to_subproc_future_dict[connector_run_params] = dict([(proc, fut)])
+                        (connector_run_params.last_sync is None or (datetime.now() - connector_run_params.last_sync).total_seconds() >= abs(connector_settings.run_interval_seconds)):
+                    if connector_settings.run_interval_seconds > 0:
+                        # check presence of mandatory params
+                        if connector_settings.params and connector_settings.script_file_path:
+                            output_folder_path = connector_settings.output_folder_path
+                            validate_or_create_folder(output_folder_path)
+                            if proc := run_subprocess(connector_settings.script_file_path):
+                                logger.info_connector_activation(connector_settings.connector_name)
+                                # async reading from subprocess so it's STDOUT buffer won't get full
+                                # will write params as a line to STDIN so the connector can read it as a line
+                                fut = executor.submit(communicate_subprocess, proc, json.dumps(connector_settings.params))
+                                # adding working process to queue
+                                connector_settings_to_subproc_future_dict[connector_run_params] = dict([(proc, fut)])
+                            else:
+                                connector_run_params.last_sync = datetime.now()
+                                logger.warn_not_valid_file_path(connector_settings.connector_name, connector_settings.script_file_path)
                         else:
                             connector_run_params.last_sync = datetime.now()
-                            logger.warn_not_valid_file_path(connector_settings.connector_name, connector_settings.script_file_path)
+                            logger.warn_mandatory_params_missing(connector_settings.connector_name)
                     else:
                         connector_run_params.last_sync = datetime.now()
-                        logger.warn_mandatory_params_missing(connector_settings.connector_name)
+                        logger.warn_connector_run_interval(connector_settings.connector_name, connector_settings.run_interval_seconds)
             except Exception as e:
                 logger.warn_exception_when_checking("connector run params", connector_settings.connector_name, str(e))
 
@@ -116,7 +120,8 @@ def main():
                 try:
                     time.sleep(0.1)  # give subprocesses/future time to work before polling
                     if fut.done() and (return_code := proc.poll()) is not None:  # if future is done so is subprocess, but rather checking
-                        out = fut.result().get("out")  # STDOUT content of subprocess
+                        # subprocess's STDOUT content
+                        out = fut.result().get("out")
                         # timestamp of data syncing
                         timestamp = datetime.now()
                         timestamp_string = timestamp.strftime(DATE_FORMAT)

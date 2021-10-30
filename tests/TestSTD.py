@@ -8,7 +8,7 @@ import requests as rq
 RELEVANT_STATUSES = ["malicious", "suspicious", "harmless"]
 
 
-def _analyze_entities(entities, alerts):  # todo - complete this method
+def _analyze_entities(entities, alerts):
     for domain in entities:
         response = rq.get(f"https://www.virustotal.com/api/v3/domains/{domain}",
                           headers={"x-apikey": "4524af8cd44905528c20ca0c23f9a74dd640bcc10fdeeb3f60fbddea8561a7a1"})

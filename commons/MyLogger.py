@@ -35,6 +35,10 @@ class CycleServiceLogger(MyLogger):
         self.logger.warning(
             f"mandatory params (connector params/script file path) for {connector_name} are missing! it can't be scheduled to run")
 
+    def warn_connector_run_interval(self, connector_name, run_interval_seconds):
+        self.logger.warning(
+            f"{connector_name} run interval must be > 0. now it is: {run_interval_seconds}")
+
     def info_connector_activation(self, connector_name):
         self.logger.info(f"activated {connector_name} successfully")
 

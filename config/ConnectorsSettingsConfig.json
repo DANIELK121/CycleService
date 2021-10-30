@@ -1,8 +1,8 @@
 [
   {
-    "run_interval_seconds" : 5,
+    "run_interval_seconds" : 7,
     "script_file_path" : "VirusTotalConnector.py",
-    "connector_name" : "",
+    "connector_name" : "VTConnector1",
     "params" : {
       "source_folder_path" : "source_folders/source_files_1",
       "iteration_entities_count" : 7,
@@ -17,8 +17,8 @@
     "params" : {
       "source_folder_path" : "source_folders/source_files_2",
       "iteration_entities_count" : 5,
-      "api_key" : "84d6a4ebc489387bde35e79aad1f92633e9af72830650bd153dbc9bfd42402c9"
+      "api_key" : "764a3612e57edf835b1ddb74ca4cf5b51e1a37a62155cede27701961f891173c"
     },
-    "output_folder_path" : ""
+    "output_folder_path" : "output_folders/VTConnector2_output"
   }
 ]

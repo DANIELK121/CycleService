@@ -14,9 +14,6 @@ TEXT_SUFF = ".txt"
 DONE_SUFF = ".done"
 
 
-# todo - handle exceptions, input validations and general validations (such as "if response.ok") in the different
-#  functions
-
 def retrieve_unprocessed_file_path(source_folder_path,
                                    logger):
     file_name_to_process = None
@@ -162,7 +159,7 @@ def main():
         logger.info_num_of_retrieved_entities_from_file(len(entities), unprocessed_file_path)
 
         connector_result.alerts = analyze_entities(entities, connector_params.api_key, logger)
-        # mark_file_as_done(unprocessed_file_path, logger)  # todo - keep uncommented
+        mark_file_as_done(unprocessed_file_path, logger)  # todo - keep uncommented
 
         io_mgr.end(connector_result)
     except Exception as e:

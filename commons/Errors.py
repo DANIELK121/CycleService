@@ -12,13 +12,3 @@ class ErrorType(Enum):
 
     def get_full_err_msg(self, additional_info):
         return f"{self.value} {additional_info}"
-
-# todo - delete
-# class Error(object):
-#
-#     def __init__(self, error_type, additional_info):
-#         self.error_type = error_type
-#         self.additional_info = additional_info
-#
-#     def get_full_error_msg(self):
-#         return self.error_type.value + self.additional_info
