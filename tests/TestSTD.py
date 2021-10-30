@@ -1,3 +1,8 @@
+import json
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
+
 import requests as rq
 
 RELEVANT_STATUSES = ["malicious", "suspicious", "harmless"]
@@ -57,6 +62,12 @@ def _analyze_entities(entities, alerts):  # todo - complete this method
             }
 
 
+def foo():
+    time.sleep(2)
+    for i in range(10):
+        print(i)
+    return 5
+
 if __name__ == "__main__":  # ensure the script is run directl
     # arg = input()  # get input from STDIN (Python 3.x)
     # data = json.loads(arg)  # parse the JSON from the first argument
@@ -74,6 +85,21 @@ if __name__ == "__main__":  # ensure the script is run directl
     # else:
     #     print("not")
 
-    a = {}
-    print(isinstance(a, dict))
+    # a = {}
+    # print(isinstance(a, dict))
+
+    # executor = ThreadPoolExecutor(max_workers=5)
+    # t = threading.Thread(target=foo, name="thread1")
+    # t.start()
+    # print("A")
+    # print(t.is_alive())
+    # f = executor.submit(foo)
+    # time.sleep(2)
+    # print(f.done())
+    # if f.done():
+    #     print(f.result())
+    # time.sleep(3)
+    # if f.done():
+    #     print(f.result())
+
     pass
