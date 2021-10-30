@@ -1,0 +1,11 @@
+google.com
+microsoft.com
+github.com
+news.ycombinator.com
+amazon.com
+wix.com
+walla.co.il
+tapuz.co.il
+www.tapuz.co.il
+virustotal.com
+developers.virustotal.com

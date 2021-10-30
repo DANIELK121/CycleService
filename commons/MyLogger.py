@@ -43,7 +43,7 @@ class CycleServiceLogger(MyLogger):
         self.logger.info(f"activated {connector_name} successfully")
 
     def warn_not_valid_file_path(self, connector_name, file_path):
-        self.logger.warning(f"can't start {connector_name}, {file_path} is not a valid file path")
+        self.logger.warning(f"can't start {connector_name}, couldn't find the connector script file: {file_path}")
 
     def warn_exception_when_checking(self, checking, connector_name, exc_msg):
         self.logger.warning(
