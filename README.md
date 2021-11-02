@@ -1,8 +1,11 @@
 # Cycle Service and VirusTotal API Connector – Docs
 ## Preface
-The VirusTotalAPI Connector reads domains’ names from .txt files. For each domain it is querying the VirusTotal API and retrieves information about the domain. It then concludes whether the domain is suspicious, in a security manner, according to it’s VirusTotal reputation (“domain's score calculated from the votes of the VirusTotal's community”) and additional parameters in the response. Finally, it outputs the result to the process STDOUT.
-The Cycle Service is a service with an infinite loop, that runs python subprocess of connector scripts at configured intervals. The connectors generate data, and the Cycle service saves it to an output folder.
+The VirusTotalAPI Connector reads domains’ names from `.txt` files. For each domain it is querying the [VirusTotal API]((https://developers.virustotal.com/reference#overview)) and retrieves information about the domain. It then concludes whether the domain is suspicious, in a security manner, according to it’s VirusTotal `reputation` (“domain's score calculated from the votes of the VirusTotal's community”) and additional parameters in the response. Finally, it outputs the result to the process `STDOUT`.
+
+The Cycle Service is a service with an infinite loop, that runs python subprocess of connector scripts at configured intervals. The connectors generate data, and the Cycle Service saves it to an output folder.
+
 The framework is designed to accommodate different types of connectors (each with its own code) and run several instances of them with separate configuration.
+
 In this document I will do a high-level overview of the project, go over important implementation details and How To Run instructions.
 ## How To Run
 - Simply run `python CycleService.py` from the project folder (“Python Exercise”)
